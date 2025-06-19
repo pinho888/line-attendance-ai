@@ -30,7 +30,7 @@ const HOLIDAY_SHEET = "國定例假表";
 const BONUS_SHEET = "獎金表";
 const DISASTER_SHEET = "天災假表";
 const credentials = JSON.parse(
-  Buffer.from(process.env.GOOGLE_SERVICE_JSON, 'base64').toString('utf-8')
+  Buffer.from(process.env.GOOGLE_SERVICE_JSON_BASE64, 'base64').toString('utf-8')
 );
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 const auth = new google.auth.GoogleAuth({
