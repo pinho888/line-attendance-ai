@@ -12,13 +12,13 @@ import axios from "axios";
 import fs from "fs";
 
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 // ========== LINE BOT 設定 ==========
 const config = {
-  channelAccessToken: "vLK0PxtrnYCuLj2ruDrFX81ZFL/fF5Sc4F+MD5ieFIIieHL8OspD20rR4n+7oBTutvM6N8plZNf8i5WpuEA2kjC3mlLQRCgnzuvFW11raY148RoLKbn7dfjmfb9fP6HH3NjwRDnGF0QJcHSxUxVhQgdB04t89/1O/w1cDnyilFU=",
-  channelSecret: "d911c75a9d4d47f0a7b525ec7d154b3b"
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINE_CHANNEL_SECRET
 };
 const client = new line.Client(config);
 
@@ -44,6 +44,11 @@ function pad(n) { return n < 10 ? "0" + n : n; }
 function isWeekend(dateStr) { const d = new Date(dateStr); return d.getDay() === 0 || d.getDay() === 6; }
 function today() { return new Date().toISOString().slice(0, 10); }
 function nowStr() { return new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }); }
+
+// 補這一行
+function getColIdx(header, colName) {
+  return header.indexOf(colName);
+}
 
 // 國定假日自動同步，建議啟動時和每24hr自動跑一次
 async function autoSyncTaiwanHolidays() {
