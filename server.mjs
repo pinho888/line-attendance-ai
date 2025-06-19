@@ -80,10 +80,8 @@ async function autoSyncTaiwanHolidays() {
 // AI 分析意圖（使用 Gemini）
 async function getIntentByAI(msg) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const chat = model.startChat();
-
-    const prompt = `
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const result = await model.generateContent(`
 你是「品禾設計智慧出勤AI」，用 JSON 結構回應：
 {
  "intent":"請假|打卡|外出|查詢薪資|新增天災假|新增獎金|其它",
@@ -92,17 +90,22 @@ async function getIntentByAI(msg) {
  "說明":"我要陪家人"
 }
 使用者輸入：「${msg}」
-如果資訊不足，請回「[補問]內容」
-`;
+    `);
 
-    const result = await chat.sendMessage(prompt);
+    // 加入 await：非常關鍵
     const response = await result.response.text();
 
     if (/^\[補問\]/.test(response)) {
       return { intent: "補問", text: response.replace(/^\[補問\]/, "") };
     }
 
-    return JSON.parse(response);
+    try {
+      return JSON.parse(response);
+    } catch {
+      console.warn("回傳不是 JSON 格式：", response);
+      return { intent: "其它" };
+    }
+
   } catch (err) {
     console.error("Gemini intent error:", err);
     return { intent: "其它" };
