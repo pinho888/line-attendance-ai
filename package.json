@@ -1,8 +1,9 @@
 {
-  "name": "glitch-hello-node",
+  "name": "pinhe-linebot",
   "version": "1.0.0",
-  "description": "A simple Node app built on express, instantly up and running.",
+  "description": "LINE Bot with Google Sheets + OpenAI integration",
   "main": "server.mjs",
+  "type": "module",
   "scripts": {
     "start": "node server.mjs"
   },
