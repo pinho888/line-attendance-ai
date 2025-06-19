@@ -45,6 +45,11 @@ function isWeekend(dateStr) { const d = new Date(dateStr); return d.getDay() ===
 function today() { return new Date().toISOString().slice(0, 10); }
 function nowStr() { return new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }); }
 
+// 補這一行
+function getColIdx(header, colName) {
+  return header.indexOf(colName);
+}
+
 // 國定假日自動同步，建議啟動時和每24hr自動跑一次
 async function autoSyncTaiwanHolidays() {
   const year = (new Date()).getFullYear();
