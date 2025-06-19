@@ -23,12 +23,12 @@ const config = {
 const client = new line.Client(config);
 
 // ========== Google Sheets 設定 ==========
-const SPREADSHEET_ID = "1QVLsVOpDY0KrFdJgF661vKUFKkMZ3S1IZ5z_ek504fg";
-const STAFF_SHEET = "夥伴名冊";
-const ATTEND_SHEET = "出勤表";
-const HOLIDAY_SHEET = "國定例假表";
-const BONUS_SHEET = "獎金表";
-const DISASTER_SHEET = "天災假表";
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+const STAFF_SHEET = process.env.STAFF_SHEET;
+const ATTEND_SHEET = process.env.ATTEND_SHEET;
+const HOLIDAY_SHEET = process.env.HOLIDAY_SHEET;
+const BONUS_SHEET = process.env.BONUS_SHEET;
+const DISASTER_SHEET = process.env.DISASTER_SHEET;
 const credentials = JSON.parse(
   Buffer.from(process.env.GOOGLE_SERVICE_JSON_BASE64, 'base64').toString('utf-8')
 );
