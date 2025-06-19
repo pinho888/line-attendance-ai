@@ -77,40 +77,38 @@ async function autoSyncTaiwanHolidays() {
   }
 }
 
-// AI 分析意圖（使用 Gemini 1.5）
+// AI 分析意圖（使用 Gemini 1.5 Pro）
 async function getIntentByAI(msg) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const result = await model.generateContent([
-      {
-        role: "user",
-        parts: [{
-          text: `你是「品禾設計智慧出勤AI」，請用 JSON 結構回覆：
+
+    const prompt = `
+你是「品禾設計智慧出勤AI」，用 JSON 結構回應以下訊息。格式如下：
 {
   "intent": "請假|打卡|外出|查詢薪資|新增天災假|新增獎金|其它",
   "假別": "事假",
   "日期": ["2025-07-01", "2025-07-02"],
   "說明": "我要陪家人"
 }
-使用者輸入：「${msg}」`
-        }]
-      }
-    ]);
-    const responseText = await result.response.text();
+使用者輸入：「${msg}」
+`;
 
-    if (/^\[補問\]/.test(responseText)) {
-      return { intent: "補問", text: responseText.replace(/^\[補問\]/, "") };
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+
+    if (/^\[補問\]/.test(response)) {
+      return { intent: "補問", text: response.replace(/^\[補問\]/, "") };
     }
 
     try {
-      return JSON.parse(responseText);
+      return JSON.parse(response);
     } catch {
-      console.warn("回傳不是 JSON 格式：", responseText);
+      console.warn("⚠️ Gemini 回傳非 JSON：", response);
       return { intent: "其它" };
     }
 
   } catch (err) {
-    console.error("Gemini intent error:", err);
+    console.error("🚨 Gemini intent error:", err);
     return { intent: "其它" };
   }
 }
