@@ -1,0 +1,21 @@
+{
+  "name": "glitch-hello-node",
+  "version": "1.0.0",
+  "description": "A simple Node app built on express, instantly up and running.",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^7.7.0",
+    "axios": "^1.10.0",
+    "express": "^4.21.2",
+    "googleapis": "^131.0.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.104.0"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "license": "MIT"
+}
