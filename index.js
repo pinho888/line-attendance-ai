@@ -29,7 +29,9 @@ const ATTEND_SHEET = "出勤表";
 const HOLIDAY_SHEET = "國定例假表";
 const BONUS_SHEET = "獎金表";
 const DISASTER_SHEET = "天災假表";
-const credentials = JSON.parse(fs.readFileSync("./fleet-respect-461709-g6-96fec9657b0b.json", "utf-8"));
+const credentials = JSON.parse(
+  Buffer.from(process.env.GOOGLE_SERVICE_JSON_BASE64, 'base64').toString('utf-8')
+);
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 const auth = new google.auth.GoogleAuth({
   credentials,
@@ -115,14 +117,14 @@ const welcomeMsg = `歡迎使用品禾LINE出勤系統！
 【註冊】輸入：「註冊+你的姓名」
 【打卡】輸入：「上班」、「下班」、「打卡」
 【請假】
-- 輸入「請假」開始（依指示回覆）
-- 或直接輸入「請假 事假 2025-07-01~2025-07-03」
-
+　- 輸入「請假」開始（依指示回覆）
+　- 或直接輸入「請假 事假 2025-07-01~2025-07-03」
+ 
 【外出紀錄】
-- 輸入「外出」、「到工地」、「離開工地」自動記錄時間（需加地點說明）
+　- 輸入「外出」、「到工地」、「離開工地」自動記錄時間（需加地點說明）
 【查薪資】
-- 輸入「薪資」查詢本月
-- 輸入「X月薪資」查詢指定月份
+　- 輸入「薪資」查詢本月
+　- 輸入「X月薪資」查詢指定月份
 【查請假】輸入：「查請假」、「我的請假」
 
 ＊如需說明，輸入「說明」或「help」取得本訊息。`;
