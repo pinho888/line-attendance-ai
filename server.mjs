@@ -12,7 +12,6 @@ import axios from "axios";
 import fs from "fs";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 // ========== LINE BOT 設定 ==========
 const config = {
