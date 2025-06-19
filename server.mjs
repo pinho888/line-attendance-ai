@@ -80,7 +80,6 @@ async function autoSyncTaiwanHolidays() {
 // AI 分析意圖（使用 Gemini）
 async function getIntentByAI(msg) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const result = await model.generateContent(`
 你是「品禾設計智慧出勤AI」，用 JSON 結構回應：
 {
@@ -91,7 +90,7 @@ async function getIntentByAI(msg) {
 }
 使用者輸入：「${msg}」
     `);
-    const response = result.response.text();
+    const response = await result.response.text();
     if (/^\[補問\]/.test(response)) return { intent: "補問", text: response.replace(/^\[補問\]/, "") };
     try {
       return JSON.parse(response);
