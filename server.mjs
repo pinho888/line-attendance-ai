@@ -82,8 +82,7 @@ async function getIntentByAI(msg) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `
-你是「品禾設計智慧出勤AI」，請根據使用者輸入內容，用 JSON 結構回應。格式如下：
-
+你是「品禾設計AI智慧出勤系統」，請根據使用者輸入內容，用 JSON 結構回應。格式如下：
 {
   "intent": "請假|打卡|外出|查詢薪資|新增天災假|新增獎金|其它",
   "假別": "事假",
@@ -133,7 +132,7 @@ function parseDateRange(datestr) {
 }
 
 // ========== 歡迎說明 ==========
-const welcomeMsg = `歡迎使用品禾LINE出勤系統！
+const welcomeMsg = `歡迎進入品禾設計AI智慧出勤系統！
 以下為使用說明：
 【註冊】輸入：「註冊+你的姓名」
 【打卡】輸入：「上班」、「下班」、「打卡」
@@ -232,12 +231,14 @@ async function smartHandleEvent(event) {
         spreadsheetId: SPREADSHEET_ID, range: ATTEND_SHEET + "!A1",
         valueInputOption: "USER_ENTERED", resource: { values: [newRow] }
       });
-      return client.replyMessage(event.replyToken, { type: "text", text: `上班打卡完成：${time}` });
+      return client.replyMessage(event.replyToken, { type: "text", text: `上班打卡完成：${time}` })
+        .catch(err => console.error("⚠️ LINE Reply Error:", err));
     }
   }
   // ========== AI 補問 ==========
   if (intentObj.intent === "補問") {
     return client.replyMessage(event.replyToken, { type: "text", text: intentObj.text });
+      .catch(err => console.error("⚠️ LINE Reply Error:", err));
   }
   // ========== 外出 ==========
   if (intentObj.intent === "外出") {
