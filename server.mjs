@@ -82,13 +82,17 @@ async function getIntentByAI(msg) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `
-你是「品禾設計智慧出勤AI」，用 JSON 結構回應以下訊息。格式如下：
+你是「品禾設計智慧出勤AI」，請根據使用者輸入內容，用 JSON 結構回應。格式如下：
+
 {
   "intent": "請假|打卡|外出|查詢薪資|新增天災假|新增獎金|其它",
   "假別": "事假",
-  "日期": ["2025-07-01", "2025-07-02"],
+  "日期": ["2025-07-01"],
+  "時段": "上午|下午|2小時|3小時",
   "說明": "我要陪家人"
 }
+
+請注意：「上午」、「下午」、「請2小時」、「請三小時」等要填入 "時段" 欄位。
 使用者輸入：「${msg}」
 `;
 
@@ -265,39 +269,54 @@ async function smartHandleEvent(event) {
   }
 
   // ========== 請假 ==========
-  if (intentObj.intent === "請假") {
-    let dateList = intentObj.日期 || parseDateRange(msg.match(/\d{4}-\d{2}-\d{2}(~\d{4}-\d{2}-\d{2})?/g)?.[0]);
-    // 自動排除國定假日/天災/週末
-    const holidayRows = (await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: HOLIDAY_SHEET + "!A2:A" })).data.values?.flat() || [];
-    const disasterRows = (await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: DISASTER_SHEET + "!A2:A" })).data.values?.flat() || [];
-    let validDates = (dateList || []).filter(d => !holidayRows.includes(d) && !disasterRows.includes(d) && !isWeekend(d));
-    if (!validDates.length) return client.replyMessage(event.replyToken, { type: "text", text: "全部日期都是國定假日、天災假或週末，不用請假！" });
-    // 寫入Google Sheet出勤表
-    const attendSheet = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: ATTEND_SHEET + "!A1:N" });
-    const attendHeader = attendSheet.data.values[0];
-    for (let d of validDates) {
-      let newRow = [];
-      newRow[attendHeader.indexOf("LINE_ID")] = userId;
-      newRow[attendHeader.indexOf("姓名")] = staffInfo ? staffInfo[staffHeader.indexOf("姓名")] : "";
-      newRow[attendHeader.indexOf("日期")] = d;
-      newRow[attendHeader.indexOf("請假")] = "V";
-      newRow[attendHeader.indexOf("假別說明")] = intentObj.假別 || "";
-      newRow[attendHeader.indexOf("請假狀態")] = "待審核";
-      newRow[attendHeader.indexOf("說明")] = intentObj.說明 || "";
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID, range: ATTEND_SHEET + "!A1",
-        valueInputOption: "USER_ENTERED", resource: { values: [newRow] }
-      });
-    }
-    // 推播主管
-    for (let adminId of adminUserIds) {
-      await client.pushMessage(adminId, {
-        type: "text",
-        text: `[請假審核] ${staffInfo ? staffInfo[staffHeader.indexOf("姓名")] : ""} 申請 ${intentObj.假別}\n日期：${validDates.join("、")}\n說明：${intentObj.說明 || ""}\n請回覆「准假 張三 2025-07-01」或「需商議 張三 2025-07-01」`
-      });
-    }
-    return client.replyMessage(event.replyToken, { type: "text", text: `請假已登記，日期：${validDates.join("、")}，待審核。` });
+if (intentObj.intent === "請假") {
+  let dateList = intentObj.日期 || parseDateRange(msg.match(/\d{4}-\d{2}-\d{2}(~\d{4}-\d{2}-\d{2})?/g)?.[0]);
+
+  const holidayRows = (await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: HOLIDAY_SHEET + "!A2:A" })).data.values?.flat() || [];
+  const disasterRows = (await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: DISASTER_SHEET + "!A2:A" })).data.values?.flat() || [];
+
+  let validDates = (dateList || []).filter(d => !holidayRows.includes(d) && !disasterRows.includes(d) && !isWeekend(d));
+  if (!validDates.length)
+    return client.replyMessage(event.replyToken, { type: "text", text: "全部日期都是國定假日、天災假或週末，不用請假！" });
+
+  const attendSheet = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: ATTEND_SHEET + "!A1:N" });
+  const attendHeader = attendSheet.data.values[0];
+
+  // 抽出請假時段關鍵詞
+  let leavePhrase = msg + " " + (intentObj.說明 || "");
+  let leaveTime = "";
+  if (/上午/.test(leavePhrase)) leaveTime = "上午";
+  else if (/下午/.test(leavePhrase)) leaveTime = "下午";
+  else if (/請[0-9一二三四五六七八九十]{1,3}小時/.test(leavePhrase)) {
+    let match = leavePhrase.match(/請([0-9]{1,2}|[一二三四五六七八九十]{1,3})小時/);
+    leaveTime = match ? `${match[1]}小時` : "";
   }
+
+  for (let d of validDates) {
+    let newRow = [];
+    newRow[attendHeader.indexOf("LINE_ID")] = userId;
+    newRow[attendHeader.indexOf("姓名")] = staffInfo ? staffInfo[staffHeader.indexOf("姓名")] : "";
+    newRow[attendHeader.indexOf("日期")] = d;
+    newRow[attendHeader.indexOf("請假")] = "V";
+    newRow[attendHeader.indexOf("假別說明")] = intentObj.假別 || "";
+    newRow[attendHeader.indexOf("請假狀態")] = "待審核";
+    newRow[attendHeader.indexOf("說明")] = intentObj.說明 || "";
+    newRow[attendHeader.indexOf("請假時段")] = leaveTime || "";
+    newRow[attendHeader.indexOf("自動備註")] = intentObj.說明 || msg;
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID, range: ATTEND_SHEET + "!A1",
+      valueInputOption: "USER_ENTERED", resource: { values: [newRow] }
+    });
+  }
+
+  for (let adminId of adminUserIds) {
+    await client.pushMessage(adminId, {
+      type: "text",
+      text: `[請假審核] ${staffInfo ? staffInfo[staffHeader.indexOf("姓名")] : ""} 申請 ${intentObj.假別}\n日期：${validDates.join("、")}\n說明：${intentObj.說明 || ""}\n請回覆「准假 張三 2025-07-01」或「需商議 張三 2025-07-01」`
+    });
+  }
+  return client.replyMessage(event.replyToken, { type: "text", text: `請假已登記，日期：${validDates.join("、")}，待審核。` });
+}
 
   // ====== 請假審核（管理員） ======
   if (adminUserIds.includes(userId) && /^(准假|需商議)\s+/.test(msg)) {
@@ -389,7 +408,17 @@ async function smartHandleEvent(event) {
     if (userType === "一般" || userType === "獎金") {
       const baseSalary = parseFloat(staffInfo[4]) || 0;
       const otRate = parseFloat(staffInfo[4]) || 1.33;
-      let sumLeave = myRows.filter(r => r[5] === "V" && (!r[6] || !r[6].includes("特休"))).length;
+      let sumLeave = 0;
+myRows.forEach(row => {
+  if (row[5] === "V" && (!row[6] || !row[6].includes("特休"))) {
+    let shift = row[7]; // 請假時段
+    if (/上午|下午/.test(shift)) sumLeave += 0.5;
+    else if (/([0-9]{1,2})小時/.test(shift)) {
+      const m = shift.match(/([0-9]{1,2})小時/);
+      sumLeave += parseFloat(m[1]) / 9;
+    } else sumLeave += 1;
+  }
+});
       let sumOT = 0;
       myRows.forEach(row => {
         if (row[3] && row[4] && (!row[5] || row[5] !== "V")) {
